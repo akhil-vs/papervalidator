@@ -1,0 +1,241 @@
+<nav class="navbar navbar-expand navbar-light bg-primary d-flex justify-content-between">
+  <div class="navbar-brand mb-0 h1 text-white">ONLINE EXAM RESULT CONFIGURATOR</div>
+</nav>
+<div class="container-fluid bg-light rounded border p-4 mx-0 row">
+  <p-overlayPanel #cl [showCloseIcon]="true" [dismissable]="false">
+    <h5 class="text-center">Excel Format - Class List</h5><h6 class="text-center"><i>[Please don't change the Excel Headers]</i></h6>
+    <img src="../assets/images/excelSample.PNG" alt="Sample" />
+</p-overlayPanel>
+<!-- <p-overlayPanel #ql [showCloseIcon]="true" [dismissable]="false">
+  <h5 class="text-center">Excel Format - List of Qstns</h5><h6 class="text-center"><i>[Please don't change the Excel Headers]</i></h6>
+  <img src="../assets/images/excelSample1.PNG" alt="Sample" />
+</p-overlayPanel> -->
+  <div class="col-lg-3 col-md-12 col-sm-12 col-xs-12 p-2">
+    <div class="row">
+      <div class="col-4 text-right">Class: </div>
+      <div class="col-8"><input type="text" class="mr-2" [(ngModel)]="class"></div>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-12 col-sm-12 col-xs-12 p-2">
+    <div class="row">
+      <div class="col-4 text-right">Exam: </div>
+      <div class="col-8"><input type="text" class="mr-2" [(ngModel)]="testname"></div>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-12 col-sm-12 col-xs-12 p-2">
+    <div class="row">
+      <div class="col-4 text-right">Subject: </div>
+      <div class="col-8"><input type="text" class="mr-2" [(ngModel)]="subject"></div>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-12 col-sm-12 col-xs-12 p-2">
+    <div class="row">
+      <div class="col-4 text-right">Teacher: </div>
+      <div class="col-8"><input type="text" class="mr-2" [(ngModel)]="classtr"></div>
+    </div>
+  </div>
+  <div class="col-lg-6 col-md-12 col-sm-12 col-xs-12 p-2">Select the class list [.xlsx]<i class="fa fa-info-circle ml-1" (click)="cl.show($event)"></i>: <input type="file" (change)="onFileChangeStudentList($event)"></div>
+  <!-- <div class="col-lg-6 col-md-12 col-sm-12 col-xs-12 p-2">Select the list of qstns [.xlsx]<i class="fa fa-info-circle ml-1" (click)="ql.show($event)"></i>: <input type="file" (change)="onFileChangeQstnList($event)"></div> -->
+  <div class="col-lg-6 col-md-12 col-sm-12 col-xs-12 p-2">
+    <button type="button" (click)="exportExcel()" [disabled]="excelBtn" class="btn btn-primary rounded d-flex align-items-center mr-2 justify-content-center float-right">
+      <i class="material-icons mr-2 ">save_alt</i><span>Export Mark List of the class</span>
+    </button>
+  </div>
+</div>
+<div class="container-fluid">
+  <p-tabView (onChange)="tabChanged($event)">
+    <p-tabPanel [header]="student.SlNo" tooltip="{{student.Name}} - {{student.AdmNo}}" 
+      *ngFor="let student of studentInfo; let i = index">
+        <div class="row"> 
+          <div class="col-md-12">
+            <div class="shadow-sm card">
+              <div class="card-body">
+                <h4 class="card-title d-flex align-items-center">
+                  <i class="material-icons">
+                    account_circle
+                  </i>
+                  Student Details</h4>
+                  <form #personalForm>
+                  <div class="row">
+                    <!-- <div class="col-md-6"> -->
+                      <div class="col-md-4 form-group">
+                        <input type="text" class="form-control" [(ngModel)]="student.Name"  name="name" placeholder="Name"
+                          #Name="ngModel" required
+                          [ngClass]="{'is-invalid': Name.invalid && (Name.touched || personalForm.submitted) }">
+                      </div>
+                      <!-- <div class="form-group"> -->
+                        <div class="col-md-4 form-group">
+                          <input type="text" class="form-control" [(ngModel)]="student.AdmNo" value="student.AdmNo" name="admno"
+                            placeholder="Adm No" #AdmNo="ngModel" required
+                            [ngClass]="{'is-invalid': AdmNo.invalid && (AdmNo.touched || personalForm.submitted) }">
+                        </div>
+                      <!-- </div> -->
+                    <!-- </div> -->
+                    <!-- <div class="col-md-4"> -->
+                      <div class="col-md-4 form-group"> 
+                        <input type="text" class="form-control" [(ngModel)]="class" name="class"
+                          placeholder="Class" #Class="ngModel" required
+                          [ngClass]="{'is-invalid': Class.invalid && (Class.touched || personalForm.submitted) }">
+                      </div>
+                      <div class="col-md-4 form-group">
+                        <input type="text" class="form-control" [(ngModel)]="classtr" name="classtr"
+                          placeholder="Teacher" #Classtr="ngModel" required
+                          [ngClass]="{'is-invalid': Classtr.invalid && (Classtr.touched || personalForm.submitted) }">
+                      </div>
+                    <!-- </div> -->
+                    <!-- <div class="col-md-4"> -->
+                      <div class="col-md-4 form-group">
+                        <input type="text" class="form-control" [(ngModel)]="testname" name="testname"
+                          placeholder="Exam Name" #TestName="ngModel" required
+                          [ngClass]="{'is-invalid': TestName.invalid && (TestName.touched || personalForm.submitted) }">
+                      </div>
+                      <div class="col-md-4 form-group">
+                        <input type="text" class="form-control" [(ngModel)]="subject" name="subject"
+                          placeholder="Subject" #Subject="ngModel" required
+                          [ngClass]="{'is-invalid': Subject.invalid && (Subject.touched || personalForm.submitted) }">
+                      </div>
+                    <!-- </div> -->
+                  </div>
+                  <div class="row">
+                    <div class="col-4">
+                      <p-selectButton [options]="attendanceTypes" [(ngModel)]="selectedAtt" [ngModelOptions]="{standalone: true}">
+                    </p-selectButton>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div> 
+            <form [formGroup]="resumeForm" (ngSubmit)="onSave(i)">
+             <!-- Experience -->
+             <div *ngIf="selectedAtt=='present'" class="shadow-sm card">
+              <div class="card-body">
+                <div class="d-flex justify-content-between card-title">
+                  <h4 class="d-flex align-items-center">
+                    <i class="material-icons">
+                      timeline
+                    </i>
+                    Mistakes</h4>
+                </div>
+                <div formArrayName="MistakeArr" *ngFor="let ex of resumeForm.get('MistakeArr')['controls']; let i = index;">
+                  <div [formGroupName]="i">
+                    <div class="row">
+                      <div class="col-md-2">
+                        <div class="form-group">
+                          <input type="text" class="form-control" name="mistake{{i}}" placeholder="QNo" formControlName="Qno" required
+                            [ngClass]="{ 'is-invalid': submitted && f.Qno.errors }">
+                        </div>
+                      </div>
+                      <!-- <div class="col-md-8">
+                        <div class="form-group">
+                          <input type="text" class="form-control" name="mistake{{i}}" placeholder="Question" formControlName="Qn">
+                        </div>
+                      </div> -->
+                      <div class="col-md-8">
+                        <div class="form-group">
+                          <textarea type='text' class="form-control" name="mistake{{i}}" placeholder="Mistakes Made" formControlName="MistakesMade" rows="3"
+                          >
+                          </textarea>
+                        </div>
+                      </div>
+                      <div class="col-md-2">
+                        <div class="form-group">
+                          <input type="text" class="form-control mm" name="mistake{{i}}" placeholder="Max Marks" formControlName="MaxMarks" required
+                            [ngClass]="{ 'is-invalid': submitted && f.MaxMarks.errors }">
+                            <input type="text" class="form-control om" name="mistake{{i}}" placeholder="Obtained Marks" formControlName="MarkObt" required
+                            [ngClass]="{ 'is-invalid': submitted && f.MarkObt.errors }" (blur)="validateMarks(i)">
+                        </div>
+                      </div>
+                    </div>
+                    <!-- <div class="row">
+                      <div class="col-md-2">
+                        <div class="form-group">
+                        </div>
+                      </div>
+                      <div class="col-md-8">
+                        <div class="form-group">
+                          <textarea type='text' class="form-control" name="mistake{{i}}" placeholder="Mistakes Made" formControlName="MistakesMade" rows="3"
+                          >
+                          </textarea>
+                        </div>
+                      </div>
+                      <div class="col-md-2">
+                        <div class="form-group">
+                          <input type="text" class="form-control" name="mistake{{i}}" placeholder="Obtained Marks" formControlName="MarkObt" required
+                            [ngClass]="{ 'is-invalid': submitted && f.MarkObt.errors }">
+                        </div>
+                      </div>
+                    </div> -->
+                    <hr>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-primary float-right" (click)="addMistakeToForm()">+</button>
+              </div>
+            </div>
+
+            <!-- Other Details -->
+
+            <div class="shadow-sm card">
+              <div class="card-body">
+                <h4 class="card-title d-flex align-items-center">
+                  <i class="material-icons"> list </i>Other Comments</h4>
+                <div class="row">
+                  <div class="col-md-12">
+                    <div class="form-group">
+                      <textarea type="text" class="form-control" formControlName="OtherDetails" name="otherDetails"
+                        rows="4"></textarea>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button type="submit" [disabled]="saveBtn" class="btn btn-primary rounded d-flex align-items-center mr-2 justify-content-center float-right">
+              <i class="material-icons mr-2 ">save</i><span>Save</span>
+            </button>
+          <button type="button" [disabled]="pdfBtn" (click)="generatePdf('download',i)"
+                class="btn btn-primary d-flex align-items-center justify-content-center">
+              <i class="material-icons mr-2">
+                cloud_download
+              </i><span>Download PDF</span>
+            </button>
+            </form>
+          </div>
+
+          <!-- <div class="col-md-4">
+            <div class="shadow-sm card action-buttons sticky-top">
+              <button (click)="resumeForm.valid ? generatePdf('open',i) : ''"
+                class="btn btn-primary d-flex align-items-center justify-content-center">
+                <i class="material-icons">
+                  picture_as_pdf
+                </i> <span>Open PDF</span></button>
+              <button (click)="resumeForm.valid ? generatePdf('download',i) : ''"
+                class="btn btn-primary d-flex align-items-center justify-content-center">
+                <i class="material-icons">
+                  cloud_download
+                </i><span>Download PDF</span></button>
+              <button (click)="resumeForm.valid ? generatePdf('print',i) : ''"
+                class="btn btn-primary d-flex align-items-center justify-content-center">
+                <i class="material-icons">
+                  print
+                </i><span>Print PDF</span></button>
+
+              <button type='reset' (click)="resetForm()"
+                class="btn btn-primary d-flex align-items-center justify-content-center">
+                <i class="material-icons">
+                  clear
+                </i><span>Reset</span></button>
+            </div>
+
+            <div class="card p-4">
+              <div class="form-group">
+                <label class="h4 mb-3" for="">Show your picture in Resume</label>
+                <input type="file" class="form-control-file" (change)="fileChanged($event)" aria-describedby="fileHelpId">
+              </div>
+              <img *ngIf="resume.profilePic" [src]="resume.profilePic" class="img-thumbnail">
+            </div>
+          </div> -->
+        </div>
+      <!-- </form> -->
+    </p-tabPanel>
+</p-tabView>
+</div>
+<p-toast></p-toast>

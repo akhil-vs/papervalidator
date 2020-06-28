@@ -1,0 +1,29 @@
+.row{
+    padding: 10px;
+}
+
+.card{
+    margin: 10px;
+}
+
+.material-icons{
+    font-size: 30px;
+}
+
+button span{
+    font-size: 22px;
+}
+
+.action-buttons button{
+    margin : 5px;
+}
+
+input, textarea {
+    border: 1px solid #007bff;
+    border-radius: 3px !important;
+    width: 100%;;
+}
+
+.card-title {
+    color: #007bff !important;
+}
