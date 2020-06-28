@@ -1,19 +1,16 @@
-# Online Resume Builder
+# Online Exam Paper Validator
 
 Client side pdf generation using angular 8 and pdfmake.
 Export to pdf in Angular 8 and pdfmake
 
-You can generate your resume in pdf format at client side. We do not store any information at server side. it is a pure client side resume builder application. 
+You can generate enter the marks and details of each student and generate separate pdfs for each student per subject and at the end can generate an excel with the marks obtained by each student.
 
 ## Features
 
-- Personal Details with Social Media hyperlink
-- Profile picture
-- Multiple Experiences and Educational details in table format
-- Other details
-- QR code
-- PDF Open, Print and Download option
+-Upload student data in excel format
+-Download per student anserr sheet validation in PDF
+-Generate excel sheet with marks for all students ofr a subject
 
 ## Developed and Maintained By
 
-This project is developed by [NgDevelop](https://www.ngdevelop.tech/) for the [Export to pdf in Angular 8 using pdfmake](https://www.ngdevelop.tech/angular-8-export-to-pdf-using-pdfmake/) blog.
+This project is developed by AKHIL VIKRAMAN
