@@ -415,6 +415,7 @@ export class AppComponent {
   tabChanged(e) {
     this.saveBtn = false;
     this.pdfBtn = true;
+    this.selectedAtt = this.studentInfo[e.index].attendance;
   }
 
   validateMarks(index) {
