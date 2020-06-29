@@ -76,7 +76,6 @@ export class AppComponent {
   }
 
   onSave(index) {
-    this.studentInfo[index].attendance = this.selectedAtt;
     this.studentInfo[index].mistakes = this.resumeForm.value;
     this.studentInfo[index].maxTotal = 0;
     this.studentInfo[index].obtTotal = 0;
@@ -145,7 +144,6 @@ export class AppComponent {
     if(this.subjectMarkList.length == this.studentInfo.length && this.subjectMarkList.length != 0) {
       this.excelBtn = false;
     }
-    console.log(this.subjectMarkList);
   }
 
   generatePdf(action = 'open', index) {
@@ -369,6 +367,9 @@ export class AppComponent {
       const data = XLSX.utils.sheet_to_json(ws); // to get 2d array pass 2nd parameter as object {header: 1}
       // console.log(data); // Data will be logged in array format containing objects
       this.studentInfo = data;
+      for(let student of this.studentInfo) {
+        student.attendance = 'present';
+      }
     };
   }
 
@@ -428,4 +429,8 @@ export class AppComponent {
     }
   }
 
+  attChanged(index) {
+    this.selectedAtt = this.studentInfo[index].attendance;
+    console.log(this.selectedAtt);
+  }
 }

@@ -98,7 +98,7 @@
                   </div>
                   <div class="row">
                     <div class="col-4">
-                      <p-selectButton [options]="attendanceTypes" [(ngModel)]="selectedAtt" [ngModelOptions]="{standalone: true}">
+                      <p-selectButton (onChange)="attChanged(i)" [options]="attendanceTypes" [(ngModel)]="student.attendance" [ngModelOptions]="{standalone: true}">
                     </p-selectButton>
                     </div>
                   </div>
