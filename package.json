@@ -4,6 +4,9 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "serve:api": "node server/index.js",
+    "dev": "node scripts/dev.js",
+    "test:api": "node server/exam-rules.test.js && node server/api.test.js",
     "build": "ng build",
     "test": "ng test",
     "lint": "ng lint",

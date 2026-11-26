@@ -7,12 +7,11 @@ import * as XLSX from 'xlsx';
 import * as $ from 'jquery';
 import { Packer, Document, Paragraph, HeadingLevel, AlignmentType } from "docx";
 import { saveAs } from "file-saver";
-import { threadId } from 'worker_threads';
 
 declare let pdfMake: any ; 
 
 @Component({
-  selector: 'app-root',
+  selector: 'app-teacher',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
   providers: [MessageService]
@@ -433,5 +432,12 @@ export class AppComponent {
   attChanged(index) {
     this.selectedAtt = this.studentInfo[index].attendance;
     console.log(this.selectedAtt);
+  }
+
+  applyLinkDetails(details: { className: string; exam: string; subject: string; teacher: string }) {
+    this.class = details.className;
+    this.testname = details.exam;
+    this.subject = details.subject;
+    this.classtr = details.teacher;
   }
 }

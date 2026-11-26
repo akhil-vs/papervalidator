@@ -1,0 +1,114 @@
+<nav class="navbar navbar-light bg-primary">
+  <div class="navbar-brand mb-0 h1 text-white">Answer sheet upload</div>
+</nav>
+
+<div class="page">
+  <div class="alert alert-warning" *ngIf="!online" role="status">
+    You are offline. You can still choose a file. It is saved in this browser and will upload when you are back online and the window is open.
+  </div>
+
+  <div class="card shadow-sm" *ngIf="loadError && !session">
+    <div class="card-body">
+      <h2>Link unavailable</h2>
+      <p>{{ loadError }}</p>
+      <button type="button" class="btn btn-primary" (click)="loadSession()">Try again</button>
+    </div>
+  </div>
+
+  <div class="card shadow-sm" *ngIf="session">
+    <div class="card-body">
+      <p class="eyebrow">{{ session.exam }}</p>
+      <h2>{{ session.subject }}</h2>
+      <p class="mb-1">{{ session.className }} · {{ session.teacher }}</p>
+      <p class="clock" [class.open]="windowPhase() === 'open'" [class.closed]="windowPhase() === 'closed'">
+        {{ countdownLabel() }}
+      </p>
+      <p class="text-muted small">Times follow the school server, not the clock on this device ({{ zoneName }}).</p>
+      <div class="instructions" *ngIf="session.instructions">{{ session.instructions }}</div>
+      <details class="mt-3">
+        <summary>If the connection fails</summary>
+        <p>
+          The file is saved in this browser before it is sent, then uploaded in small parts.
+          If the network drops, parts already received stay on the server and sending continues when you are online again.
+          Keep this page open until it says the answer sheet was received. If the page closes, open the same link on this same phone or computer.
+          Switching browsers loses the saved file.
+        </p>
+      </details>
+    </div>
+  </div>
+
+  <div class="card shadow-sm" *ngIf="pendingList.length > 1 && snapshot.phase === 'idle'">
+    <div class="card-body">
+      <h3>Unfinished uploads on this device</h3>
+      <div class="pending" *ngFor="let item of pendingList">
+        <div>
+          <strong>{{ item.name }}</strong> · {{ item.admNo }}
+          <div class="text-muted small" *ngFor="let file of item.files">{{ file.fileName }}</div>
+        </div>
+        <button type="button" class="btn btn-primary" (click)="continueOne(item)">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm" *ngIf="snapshot.phase !== 'idle'" role="status" aria-live="polite">
+    <div class="card-body">
+      <h3>{{ snapshot.title }}</h3>
+      <p>{{ snapshot.message }}</p>
+      <div class="progress mb-3" *ngIf="snapshot.phase !== 'blocked' || snapshot.percent">
+        <div class="progress-bar" [style.width.%]="snapshot.percent">{{ snapshot.percent }}%</div>
+      </div>
+      <ul class="file-list">
+        <li *ngFor="let file of snapshot.files">
+          {{ file.fileName }} — {{ file.status }} ({{ size(file.receivedBytes) }} of {{ size(file.size) }})
+        </li>
+      </ul>
+      <p *ngIf="snapshot.phase === 'complete' && snapshot.completedAt">Received {{ when(snapshot.completedAt) }}.</p>
+      <button type="button" class="btn btn-primary mr-2 mb-2" *ngIf="snapshot.canRetry" (click)="retry()">Retry now</button>
+      <button type="button" class="btn btn-outline-primary mr-2 mb-2" *ngIf="snapshot.canDownloadLocal" (click)="downloadLocal()">Download your copy</button>
+      <button type="button" class="btn btn-outline-primary mr-2 mb-2" *ngIf="snapshot.canChooseFile" (click)="chooseAgain()">Choose a different file</button>
+      <button type="button" class="btn btn-outline-danger mb-2" *ngIf="snapshot.phase !== 'complete'" (click)="discard()">Discard saved file</button>
+      <button type="button" class="btn btn-outline-primary mb-2" *ngIf="snapshot.phase === 'complete'" (click)="chooseAgain()">Send another file</button>
+    </div>
+  </div>
+
+  <form class="card shadow-sm" *ngIf="session && showForm()" (ngSubmit)="submit()">
+    <div class="card-body">
+      <h3>Your details</h3>
+      <div class="form-group" *ngIf="session.students.length">
+        <label for="student">Name</label>
+        <select id="student" class="form-control" name="admNo" [(ngModel)]="admNo" (ngModelChange)="onStudentPick()">
+          <option value="">Select your name</option>
+          <option *ngFor="let student of session.students" [value]="student.admNo">{{ student.name }} — {{ student.admNo }}</option>
+        </select>
+      </div>
+      <div class="row" *ngIf="!session.students.length">
+        <div class="col-md-6 form-group">
+          <label for="name">Name</label>
+          <input id="name" type="text" name="name" [(ngModel)]="name" (blur)="lookupMine()">
+        </div>
+        <div class="col-md-6 form-group">
+          <label for="adm">Admission number</label>
+          <input id="adm" type="text" name="admNo" [(ngModel)]="admNo" (blur)="lookupMine()">
+        </div>
+      </div>
+      <div class="alert alert-info" *ngIf="mineNote">{{ mineNote }}</div>
+      <ng-container *ngIf="snapshot.phase === 'idle' && receipt() as saved">
+        <div class="alert alert-success">
+          An answer sheet for {{ saved.name }} was sent from this device at {{ when(saved.completedAt) }}.
+        </div>
+      </ng-container>
+
+      <h3>Answer sheet</h3>
+      <p class="text-muted">PDF, JPG, PNG, or WEBP. Up to {{ session.maxFiles }} files, {{ size(session.maxFileBytes) }} each.</p>
+      <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp"
+        multiple (change)="onFiles($event)" [disabled]="windowPhase() === 'closed' || mineLocked">
+      <ul class="file-list" *ngIf="chosen.length">
+        <li *ngFor="let file of chosen">{{ file.name }} ({{ size(file.size) }})</li>
+      </ul>
+      <div class="alert alert-warning" *ngIf="formError">{{ formError }}</div>
+      <button type="submit" class="btn btn-primary" [disabled]="windowPhase() === 'closed' || mineLocked">
+        {{ windowPhase() === 'scheduled' ? 'Save and upload when the window opens' : 'Upload answer sheet' }}
+      </button>
+    </div>
+  </form>
+</div>

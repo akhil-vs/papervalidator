@@ -1,8 +1,13 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NgModule } from '@angular/core';
+import { HttpClientModule } from '@angular/common/http';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AppComponent } from './app.component';
+import { ShellComponent } from './shell.component';
+import { AppRoutingModule } from './app-routing.module';
+import { LinkPanelComponent } from './answer-sheet/link-panel.component';
+import { StudentUploadComponent } from './answer-sheet/student-upload.component';
 
 import {TabViewModule} from 'primeng/tabview';
 import {TooltipModule} from 'primeng/tooltip';
@@ -14,11 +19,16 @@ import {PanelModule} from 'primeng/panel';
 
 @NgModule({
   declarations: [
-    AppComponent
+    ShellComponent,
+    AppComponent,
+    LinkPanelComponent,
+    StudentUploadComponent
   ],
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
+    HttpClientModule,
+    AppRoutingModule,
     FormsModule,
     ReactiveFormsModule,
     TabViewModule,
@@ -30,6 +40,6 @@ import {PanelModule} from 'primeng/panel';
     PanelModule
   ],
   providers: [],
-  bootstrap: [AppComponent]
+  bootstrap: [ShellComponent]
 })
 export class AppModule { }
