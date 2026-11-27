@@ -1,0 +1,153 @@
+<div class="container-fluid px-0">
+  <div class="card shadow-sm link-card">
+    <div class="card-body">
+      <h4 class="card-title d-flex align-items-center">
+        <i class="material-icons">link</i>
+        Timed answer-sheet link
+      </h4>
+      <p class="mb-3">
+        Students open the link only during the time you set and upload a PDF or photos of the answer sheet.
+        If their connection drops, the file stays in that browser and sending continues from the last part the server received.
+      </p>
+
+      <div class="alert alert-danger" *ngIf="apiOnline === false">
+        The upload service is not reachable, so a link cannot collect files right now.
+        Start it with <code>npm run serve:api</code> (or <code>npm run dev</code> for the site and the service together), then press Try again.
+        A student who already chose a file keeps it on their device until the service is back.
+        <button type="button" class="btn btn-sm btn-outline-danger ml-2" (click)="checkApi()">Try again</button>
+      </div>
+      <div class="alert alert-success" *ngIf="notice">{{ notice }}</div>
+      <div class="alert alert-warning" *ngIf="error">{{ error }}</div>
+
+      <div class="row">
+        <div class="col-md-3 form-group">
+          <label>Opens</label>
+          <input type="datetime-local" [(ngModel)]="opensAt" name="opensAt">
+        </div>
+        <div class="col-md-3 form-group">
+          <label>Closes</label>
+          <input type="datetime-local" [(ngModel)]="closesAt" name="closesAt">
+        </div>
+        <div class="col-md-2 form-group">
+          <label>Finish-up minutes</label>
+          <input type="number" min="0" max="120" [(ngModel)]="graceMinutes" name="graceMinutes">
+        </div>
+        <div class="col-md-2 form-group">
+          <label>Max file MB</label>
+          <input type="number" min="1" max="50" [(ngModel)]="maxFileMb" name="maxFileMb">
+        </div>
+        <div class="col-md-2 form-group">
+          <label>Uploads each</label>
+          <input type="number" min="1" max="5" [(ngModel)]="maxAttempts" name="maxAttempts">
+        </div>
+      </div>
+      <p class="text-muted small">
+        Times use this computer’s clock ({{ zoneName }}). Finish-up minutes let a student who started on time complete the upload after the closing time if the network failed. A new upload cannot start after the window closes.
+      </p>
+      <div class="form-group">
+        <label>Instructions for students</label>
+        <textarea rows="3" [(ngModel)]="instructions" name="instructions"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Address students will open</label>
+        <input type="text" [(ngModel)]="linkBase" name="linkBase" placeholder="http://192.168.1.20:4200">
+        <small class="text-muted">Use this computer’s address when students are on phones. <code>localhost</code> only works on this computer.</small>
+      </div>
+      <p class="text-muted" *ngIf="!(students && students.length)">
+        No class list is loaded. Anyone with the link can type a name and admission number. Load the Excel file first if only those students should upload.
+      </p>
+      <p class="text-muted" *ngIf="excelCount()">
+        {{ excelCount() }} students from the class list will be saved into the link. Anyone with the link can see those names.
+      </p>
+      <button type="button" class="btn btn-primary" (click)="create()" [disabled]="creating || apiOnline === false">
+        Create timed link
+      </button>
+
+      <div class="mt-4" *ngIf="saved.length">
+        <label>Links saved in this browser</label>
+        <select class="form-control" [value]="activeIndex" (change)="onSavedPick($event)">
+          <option *ngFor="let link of saved; let i = index" [value]="i">
+            {{ link.subject }} · {{ link.className }} · {{ when(link.closesAt) }}
+          </option>
+        </select>
+      </div>
+
+      <div class="link-live mt-4" *ngIf="active">
+        <div class="d-flex justify-content-between flex-wrap">
+          <h5 class="mb-1">{{ active.exam }} · {{ active.subject }}</h5>
+          <span class="badge" [class.badge-success]="livePhase() === 'open'"
+            [class.badge-warning]="livePhase() === 'scheduled'"
+            [class.badge-secondary]="livePhase() === 'closed' || !session">{{ phaseLabel() }}</span>
+        </div>
+        <p class="mb-2">{{ countdownLabel() }}</p>
+        <label>Student link</label>
+        <input type="text" [value]="studentLink()" readonly>
+        <div class="mt-2 mb-3">
+          <button type="button" class="btn btn-primary mr-2 mb-2" (click)="copyLink()">Copy link</button>
+          <button type="button" class="btn btn-outline-primary mr-2 mb-2" (click)="share()">Share</button>
+          <a class="btn btn-outline-primary mb-2" [href]="mailHref()">Email link</a>
+        </div>
+        <p class="small text-muted">Management key, stored in this browser: <code>{{ active.manageKey }}</code></p>
+        <div class="row">
+          <div class="col-md-6 form-group">
+            <label>New closing time</label>
+            <input type="datetime-local" [(ngModel)]="nextClose" name="nextClose">
+          </div>
+          <div class="col-md-6 form-group d-flex align-items-end">
+            <button type="button" class="btn btn-outline-primary mr-2" (click)="updateClose()">Update closing time</button>
+            <button type="button" class="btn btn-outline-danger" (click)="closeNow()">Close window now</button>
+          </div>
+        </div>
+        <button type="button" class="btn btn-outline-primary mb-3" (click)="useCurrentRoster()">Save instructions and current class list to this link</button>
+
+        <h5 *ngIf="rosterCount">Received {{ receivedCount }} of {{ rosterCount }}</h5>
+        <h5 *ngIf="!rosterCount">Received files</h5>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Adm no</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Detail</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of rows">
+                <td>{{ row.admNo }}</td>
+                <td>{{ row.name }}</td>
+                <td>{{ row.status }}</td>
+                <td>{{ row.detail }}</td>
+                <td class="text-right">
+                  <button type="button" class="btn btn-sm btn-link" *ngFor="let file of row.files"
+                    [disabled]="!file.ready" (click)="download(row, file.fileId, file.fileName)">{{ file.fileName }}</button>
+                  <button type="button" class="btn btn-sm btn-outline-danger" *ngIf="row.partial" (click)="discardPartial(row)">Discard</button>
+                </td>
+              </tr>
+              <tr *ngIf="!rows.length">
+                <td colspan="5">No students on this link yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <h5>Restore a link</h5>
+        <p class="text-muted small">Use this if you cleared the browser data but still have the student link and the management key.</p>
+        <div class="row">
+          <div class="col-md-6 form-group">
+            <input type="text" [(ngModel)]="restoreToken" name="restoreToken" placeholder="Student link or token">
+          </div>
+          <div class="col-md-4 form-group">
+            <input type="text" [(ngModel)]="restoreKey" name="restoreKey" placeholder="Management key">
+          </div>
+          <div class="col-md-2 form-group">
+            <button type="button" class="btn btn-outline-primary" (click)="restore()">Restore</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,32 @@
+:host {
+  display: block;
+}
+
+.link-card {
+  margin: 12px;
+}
+
+label {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+input, textarea, select {
+  width: 100%;
+  border: 1px solid #007bff;
+  padding: 6px 8px;
+}
+
+.badge {
+  font-size: 14px;
+  padding: 6px 10px;
+}
+
+.link-live {
+  border-top: 1px solid #d8e2ef;
+  padding-top: 16px;
+}
+
+.table td, .table th {
+  vertical-align: middle;
+}

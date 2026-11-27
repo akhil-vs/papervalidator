@@ -4,6 +4,9 @@
   "scripts": {
     "ng": "node scripts/with-openssl-legacy.js",
     "start": "node scripts/with-openssl-legacy.js serve",
+    "serve:api": "node server/index.js",
+    "dev": "node scripts/dev.js",
+    "test:api": "node server/exam-rules.test.js && node server/api.test.js",
     "build": "node scripts/with-openssl-legacy.js build --prod",
     "test": "node scripts/with-openssl-legacy.js test",
     "lint": "ng lint",

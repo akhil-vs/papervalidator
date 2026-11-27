@@ -42,6 +42,14 @@
     </button>
   </div>
 </div>
+<app-answer-link
+  [className]="class"
+  [exam]="testname"
+  [subject]="subject"
+  [teacher]="classtr"
+  [students]="studentInfo"
+  (applyDetails)="applyLinkDetails($event)">
+</app-answer-link>
 <div class="container-fluid">
   <p-tabView (onChange)="tabChanged($event)">
     <p-tabPanel [header]="student.SlNo" tooltip="{{student.Name}} - {{student.AdmNo}}" 

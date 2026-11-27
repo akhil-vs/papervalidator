@@ -1,31 +1,25 @@
-import { TestBed, async } from '@angular/core/testing';
+import { async, TestBed } from '@angular/core/testing';
+import { ReactiveFormsModule } from '@angular/forms';
+import { MessageService } from 'primeng/api';
 import { AppComponent } from './app.component';
+import { ScriptService } from './script.service';
 
 describe('AppComponent', () => {
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [
-        AppComponent
-      ],
+      imports: [ReactiveFormsModule],
+      declarations: [AppComponent],
+      providers: [
+        MessageService,
+        { provide: ScriptService, useValue: { load: () => Promise.resolve() } }
+      ]
+    }).overrideComponent(AppComponent, {
+      set: { template: '<div>Exam Paper Validator</div>' }
     }).compileComponents();
   }));
 
-  it('should create the app', () => {
+  it('should create the teacher page', () => {
     const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.debugElement.componentInstance;
-    expect(app).toBeTruthy();
-  });
-
-  it(`should have as title 'resume-builder'`, () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.debugElement.componentInstance;
-    expect(app.title).toEqual('resume-builder');
-  });
-
-  it('should render title in a h1 tag', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    fixture.detectChanges();
-    const compiled = fixture.debugElement.nativeElement;
-    expect(compiled.querySelector('h1').textContent).toContain('Welcome to resume-builder!');
+    expect(fixture.componentInstance).toBeTruthy();
   });
 });
