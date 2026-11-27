@@ -2,17 +2,20 @@
   "name": "resume-builder",
   "version": "0.0.0",
   "scripts": {
-    "ng": "ng",
-    "start": "ng serve",
+    "ng": "node scripts/with-openssl-legacy.js",
+    "start": "node scripts/with-openssl-legacy.js serve",
     "serve:api": "node server/index.js",
     "dev": "node scripts/dev.js",
     "test:api": "node server/exam-rules.test.js && node server/api.test.js",
-    "build": "ng build",
-    "test": "ng test",
+    "build": "node scripts/with-openssl-legacy.js build --prod",
+    "test": "node scripts/with-openssl-legacy.js test",
     "lint": "ng lint",
-    "e2e": "ng e2e"
+    "e2e": "node scripts/with-openssl-legacy.js e2e"
   },
   "private": true,
+  "engines": {
+    "node": "22.x"
+  },
   "dependencies": {
     "@angular/animations": "~9.1.11",
     "@angular/common": "~9.1.11",
