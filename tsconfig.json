@@ -20,6 +20,7 @@
       "primeng/*": ["node_modules/primeng-lts/*"]
     }
   },
+  "exclude": ["node_modules", "dist", "out-tsc", "backend"],
   "angularCompilerOptions": {
     "fullTemplateTypeCheck": true,
     "strictInjectionParameters": true,
