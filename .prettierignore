@@ -1,0 +1,10 @@
+node_modules
+dist
+out-tsc
+coverage
+.firebase
+package-lock.json
+src/assets
+*.ttf
+*.png
+*.ico

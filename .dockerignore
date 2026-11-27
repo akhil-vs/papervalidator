@@ -1,0 +1,8 @@
+node_modules
+dist
+out-tsc
+coverage
+.git
+.firebase
+*.md
+.env

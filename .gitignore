@@ -10,6 +10,9 @@
 # dependencies
 /node_modules
 
+# local secrets and compose overrides
+.env
+
 # profiling files
 chrome-profiler-events.json
 speed-measure-plugin.json

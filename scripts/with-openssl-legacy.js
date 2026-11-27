@@ -20,15 +20,7 @@ if (nodeMajor >= 17) {
   env.NODE_OPTIONS = parts.join(' ');
 }
 
-const ngBin = path.join(
-  __dirname,
-  '..',
-  'node_modules',
-  '@angular',
-  'cli',
-  'bin',
-  'ng'
-);
+const ngBin = path.join(__dirname, '..', 'node_modules', '@angular', 'cli', 'bin', 'ng');
 
 const child = spawn(process.execPath, [ngBin, ...process.argv.slice(2)], {
   stdio: 'inherit',

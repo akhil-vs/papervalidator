@@ -2,6 +2,8 @@
 // `ng build --prod` replaces `environment.ts` with `environment.prod.ts`.
 // The list of file replacements can be found in `angular.json`.
 
+// Public build settings only. Copy .env.example to .env for Docker Compose.
+// Do not put database passwords, tokens, or other secrets in this file.
 export const environment = {
   production: false
 };

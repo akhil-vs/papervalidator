@@ -1,3 +1,5 @@
+// Angular 9 app. Ivy stays off. Node 22 needs scripts/with-openssl-legacy.js
+// because webpack 4 hashes with MD4. ESLint type-checks through tsconfig.eslint.json.
 {
   "compileOnSave": false,
   "compilerOptions": {
@@ -11,14 +13,9 @@
     "moduleResolution": "node",
     "importHelpers": true,
     "target": "es2015",
-    "typeRoots": [
-      "node_modules/@types"
-    ],
-    "types" : ["node"],
-    "lib": [
-      "es2018",
-      "dom"
-    ],
+    "typeRoots": ["node_modules/@types"],
+    "types": ["node"],
+    "lib": ["es2018", "dom"],
     "paths": {
       "primeng/*": ["node_modules/primeng-lts/*"]
     }
