@@ -49,17 +49,40 @@ Public build settings live in `src/environments/environment.ts`. `ng build --pro
 
 ## Top-level folders
 
-| Folder             | Purpose                                                                                                         |
-| ------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `src`              | Angular application: the marking screen, global styles, and build-time environment files.                       |
-| `src/app`          | The component, template, and in-browser models for a sitting.                                                   |
-| `src/environments` | Public configuration swapped in at build time.                                                                  |
-| `src/assets`       | Fonts and the class-list sample images.                                                                         |
-| `e2e`              | Protractor end-to-end tests.                                                                                    |
-| `scripts`          | The Node 22 wrapper that enables OpenSSL's legacy provider for the Angular 9 build.                             |
-| `db`               | PostgreSQL migrations for the optional shared mark book. Compose applies them only with the `markbook` profile. |
+| Folder             | Purpose                                                                                                |
+| ------------------ | ------------------------------------------------------------------------------------------------------ |
+| `src`              | Angular application: the marking screen, global styles, and build-time environment files.              |
+| `src/app`          | The component, template, and in-browser models for a sitting.                                          |
+| `src/environments` | Public configuration swapped in at build time.                                                         |
+| `src/assets`       | Fonts and the class-list sample images.                                                                |
+| `e2e`              | Protractor end-to-end tests.                                                                           |
+| `scripts`          | The Node 22 wrapper that enables OpenSSL's legacy provider for the Angular 9 build.                    |
+| `db`               | PostgreSQL migrations for the shared mark book. Compose applies them only with the `markbook` profile. |
+| `backend`          | HTTP API. This module is teacher accounts and bearer-token checks.                                     |
 
-There is no application server in this repo. Excel import, totals, print, and the workbook download happen in the browser. `db/` is the schema for a later shared mark book, ready to boot locally.
+Excel import, totals, print, and the workbook download still happen in the browser. `backend/` is the HTTP API for the shared mark book. This slice is the teacher account and bearer-token module: `GET /v1/health`, `GET /v1/me`, and the teacher collection. Students, sittings, and the other paths in the API spec are not implemented yet.
+
+### API
+
+Requires Node.js 22. From `backend/`:
+
+```bash
+npm ci
+npm test
+npm run dev
+```
+
+Copy the repo `.env.example` to `.env` and set `JWT_SECRET` to at least 32 characters. `DATABASE_URL` points at the mark-book database. The API listens on port 8080.
+
+The OpenAPI spec authenticates every path except `GET /v1/health` with `Authorization: Bearer <jwt>`. The token is HS256. Its claims are `sub` (teacher id) and `school_id`. A teacher can read and add teachers only in that school. Passwords are not part of this module: the schema stores a name and an email, and the spec does not define a sign-in path. For a local call, mint a token for a teacher row that already exists:
+
+```bash
+npm run token -- 22222222-2222-4222-8222-222222222222 11111111-1111-4111-8111-111111111111
+```
+
+`npm test` covers the token, the teacher service, and the HTTP routes without Postgres. Set `DATABASE_URL` to also run the repository test against the mark-book schema.
+
+With Docker, `docker compose --profile markbook up --build` starts Postgres and the API. `JWT_SECRET` has to be set in `.env`.
 
 ## Lint and types
 

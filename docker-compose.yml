@@ -1,5 +1,5 @@
 # Default: the Angular dev server.
-# Mark-book database: docker compose --profile markbook up
+# Mark-book database and API: docker compose --profile markbook up
 services:
   web:
     build: .
@@ -23,6 +23,24 @@ services:
     volumes:
       - markbook_data:/var/lib/postgresql/data
       - ./db/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-exam} -d ${POSTGRES_DB:-exam_validator}']
+      interval: 2s
+      timeout: 5s
+      retries: 20
+
+  api:
+    profiles: ['markbook']
+    build: ./backend
+    ports:
+      - '${API_PORT:-8080}:8080'
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-exam}:${POSTGRES_PASSWORD:-exam}@db:5432/${POSTGRES_DB:-exam_validator}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      PORT: '8080'
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   web_node_modules:
