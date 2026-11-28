@@ -34,8 +34,9 @@ test('health is public and teacher routes require a bearer token', async () => {
 test('the caller can read their profile, add a teacher, and receive its location', async () => {
   const repo = new MemoryTeachers();
   repo.rows.push({ id: teacherId, schoolId, fullName: 'Anita Shah', email: 'anita.shah@riverside.example' });
+  repo.roles.set(teacherId, 'coordinator');
   await withServer(repo, async (base, issue) => {
-    const authorization = `Bearer ${issue({ teacherId, schoolId })}`;
+    const authorization = `Bearer ${issue({ teacherId, schoolId, role: 'coordinator' })}`;
     const me = await fetch(`${base}/v1/me`, { headers: { authorization } });
     assert.equal(me.status, 200);
     assert.deepEqual(await me.json(), {
@@ -81,11 +82,12 @@ test('a deleted account and a server failure stay out of the response body', asy
   await withServer(
     repo,
     async (base, issue) => {
-      const authorization = `Bearer ${issue({ teacherId, schoolId })}`;
+      const authorization = `Bearer ${issue({ teacherId, schoolId, role: 'coordinator' })}`;
       const denied = await fetch(`${base}/v1/me`, { headers: { authorization } });
       assert.equal(denied.status, 403);
 
       repo.rows.push({ id: teacherId, schoolId, fullName: 'Anita Shah', email: null });
+      repo.roles.set(teacherId, 'coordinator');
       repo.insertError = new Error('relation teachers has a secret constraint');
       const failed = await fetch(`${base}/v1/teachers`, {
         method: 'POST',
@@ -123,7 +125,7 @@ test('unknown routes and the wrong method are problem documents', async () => {
   const repo = new MemoryTeachers();
   repo.rows.push({ id: teacherId, schoolId, fullName: 'Anita Shah', email: null });
   await withServer(repo, async (base, issue) => {
-    const authorization = `Bearer ${issue({ teacherId, schoolId })}`;
+    const authorization = `Bearer ${issue({ teacherId, schoolId, role: 'teacher' })}`;
     const missing = await fetch(`${base}/v1/students`, { headers: { authorization } });
     assert.equal(missing.status, 404);
     const wrongMethod = await fetch(`${base}/v1/me`, { method: 'DELETE', headers: { authorization } });

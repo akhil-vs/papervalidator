@@ -1,12 +1,15 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { principalFromAuthorization } from '../../application/authenticate.js';
+import type { AuthService } from '../../application/auth-service.js';
 import type { Logger, TokenVerifier } from '../../application/ports.js';
 import type { TeacherService } from '../../application/teacher-service.js';
 import {
   AccessDenied,
   EmailAlreadyUsed,
+  EmailUnverified,
   MethodNotAllowed,
   NotFound,
+  TooManyRequests,
   Unauthorized,
   ValidationFailed,
   type FieldError,
@@ -20,6 +23,7 @@ export type AppDeps = {
   teachers: TeacherService;
   tokens: TokenVerifier;
   logger: Logger;
+  auth?: AuthService;
 };
 
 type Problem = {
@@ -76,6 +80,9 @@ async function route(
     return sendJson(response, 200, { status: 'ok' });
   }
 
+  const authStatus = await routeAuth(request, response, deps, path, method);
+  if (authStatus !== null) return authStatus;
+
   const principal = principalFromAuthorization(deps.tokens, request.headers.authorization);
   setTeacherId(principal.teacherId);
 
@@ -95,6 +102,16 @@ async function route(
     }
     if (method === 'POST') {
       const created = await deps.teachers.create(principal, await readJson(request));
+      if (created.email && deps.auth) {
+        try {
+          await deps.auth.sendPasswordSetup(created);
+        } catch (error) {
+          deps.logger.error('auth.setup_email', {
+            teacherId: created.id,
+            message: error instanceof Error ? error.message : 'unknown',
+          });
+        }
+      }
       return sendJson(response, 201, toTeacherJson(created), {
         location: resourceUrl(request, `/v1/teachers/${created.id}`),
       });
@@ -115,6 +132,54 @@ async function route(
     return sendJson(response, 200, toTeacherJson(teacher));
   }
 
+  throw new NotFound('Resource was not found.');
+}
+
+async function routeAuth(
+  request: IncomingMessage,
+  response: ServerResponse,
+  deps: AppDeps,
+  path: string,
+  method: string
+): Promise<number | null> {
+  if (!path.startsWith('/v1/auth/')) return null;
+  if (!deps.auth) throw new NotFound('Resource was not found.');
+  const ip = request.socket.remoteAddress ?? 'unknown';
+  if (path === '/v1/auth/signup') {
+    if (method !== 'POST') throw new MethodNotAllowed('POST');
+    return sendJson(response, 201, await deps.auth.signup(await readJson(request), ip));
+  }
+  if (path === '/v1/auth/login') {
+    if (method !== 'POST') throw new MethodNotAllowed('POST');
+    return sendJson(response, 200, await deps.auth.login(await readJson(request), ip));
+  }
+  if (path === '/v1/auth/logout') {
+    if (method !== 'POST') throw new MethodNotAllowed('POST');
+    await deps.auth.logout(await readJson(request));
+    return sendEmpty(response, 204);
+  }
+  if (path === '/v1/auth/refresh') {
+    if (method !== 'POST') throw new MethodNotAllowed('POST');
+    return sendJson(response, 200, await deps.auth.refresh(await readJson(request)));
+  }
+  if (path === '/v1/auth/password-resets') {
+    if (method !== 'POST') throw new MethodNotAllowed('POST');
+    return sendJson(response, 202, await deps.auth.requestPasswordReset(await readJson(request), ip));
+  }
+  if (path === '/v1/auth/password-resets/confirm') {
+    if (method !== 'POST') throw new MethodNotAllowed('POST');
+    await deps.auth.confirmPasswordReset(await readJson(request));
+    return sendEmpty(response, 204);
+  }
+  if (path === '/v1/auth/email-verifications') {
+    if (method !== 'POST') throw new MethodNotAllowed('POST');
+    return sendJson(response, 202, await deps.auth.requestEmailVerification(await readJson(request), ip));
+  }
+  if (path === '/v1/auth/email-verifications/confirm') {
+    if (method !== 'POST') throw new MethodNotAllowed('POST');
+    await deps.auth.confirmEmailVerification(await readJson(request));
+    return sendEmpty(response, 204);
+  }
   throw new NotFound('Resource was not found.');
 }
 
@@ -169,6 +234,15 @@ function resourceUrl(request: IncomingMessage, path: string): string {
   return `${secure ? 'https' : 'http'}://${host}${path}`;
 }
 
+function sendEmpty(response: ServerResponse, status: number): number {
+  response.writeHead(status, {
+    'cache-control': 'no-store',
+    'x-content-type-options': 'nosniff',
+  });
+  response.end();
+  return status;
+}
+
 function sendJson(response: ServerResponse, status: number, body: unknown, extraHeaders: Record<string, string> = {}): number {
   const payload = JSON.stringify(body);
   response.writeHead(status, {
@@ -199,12 +273,13 @@ function sendProblem(response: ServerResponse, error: unknown, instance: string,
     'cache-control': 'no-store',
     'x-content-type-options': 'nosniff',
     ...(mapped.allow ? { allow: mapped.allow } : {}),
+    ...(mapped.retryAfter ? { 'retry-after': String(mapped.retryAfter) } : {}),
   });
   response.end(payload);
   return mapped.status;
 }
 
-function toProblem(error: unknown, instance: string): { status: number; body: Problem; allow?: string } {
+function toProblem(error: unknown, instance: string): { status: number; body: Problem; allow?: string; retryAfter?: number } {
   if (error instanceof MethodNotAllowed) {
     return {
       status: 405,
@@ -221,6 +296,9 @@ function toProblem(error: unknown, instance: string): { status: number; body: Pr
   if (error instanceof Unauthorized) {
     return { status: 401, body: problem('unauthorized', 'Unauthorized', 401, error.message, instance) };
   }
+  if (error instanceof EmailUnverified) {
+    return { status: 403, body: problem('email-unverified', 'Email unverified', 403, error.message, instance) };
+  }
   if (error instanceof AccessDenied) {
     return { status: 403, body: problem('forbidden', 'Forbidden', 403, error.message, instance) };
   }
@@ -229,6 +307,13 @@ function toProblem(error: unknown, instance: string): { status: number; body: Pr
   }
   if (error instanceof EmailAlreadyUsed) {
     return { status: 409, body: problem('conflict', 'Conflict', 409, error.message, instance) };
+  }
+  if (error instanceof TooManyRequests) {
+    return {
+      status: 429,
+      retryAfter: error.retryAfterSeconds,
+      body: problem('too-many-requests', 'Too Many Requests', 429, error.message, instance),
+    };
   }
   return {
     status: 500,

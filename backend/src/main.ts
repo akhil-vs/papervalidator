@@ -1,9 +1,14 @@
 import { fileURLToPath } from 'node:url';
+import { AuthService } from './application/auth-service.js';
 import { TeacherService } from './application/teacher-service.js';
 import { loadEnvFile, requiredEnv } from './infrastructure/config/env.js';
+import { ScryptHasher } from './infrastructure/crypto/password-hasher.js';
 import { JwtTokenService } from './infrastructure/jwt/jwt-token-service.js';
+import { createLoggingMailer } from './infrastructure/mail/logging-mailer.js';
+import { createAttemptCounter, createAuthRepository } from './infrastructure/postgres/auth-repository.js';
 import { createLogger } from './infrastructure/logging/logger.js';
 import { createPool, createTeacherRepository } from './infrastructure/postgres/teacher-repository.js';
+import { ensureAuthSchema } from './infrastructure/schema/auth-schema.js';
 import { createHttpServer } from './interfaces/http/server.js';
 
 loadEnvFile(fileURLToPath(new URL('../../.env', import.meta.url)));
@@ -11,10 +16,12 @@ loadEnvFile(fileURLToPath(new URL('../../.env', import.meta.url)));
 const logger = createLogger();
 const tokens = new JwtTokenService(requiredEnv('JWT_SECRET'));
 const pool = createPool(requiredEnv('DATABASE_URL'));
+await ensureAuthSchema(pool);
 const server = createHttpServer({
   teachers: new TeacherService(createTeacherRepository(pool)),
   tokens,
   logger,
+  auth: new AuthService(createAuthRepository(pool), createAttemptCounter(pool), new ScryptHasher(), tokens, createLoggingMailer(logger)),
 });
 
 const port = portNumber(process.env.PORT);

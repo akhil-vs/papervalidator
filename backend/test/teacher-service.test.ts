@@ -16,7 +16,8 @@ function fixture(): { service: TeacherService; repo: MemoryTeachers; caller: Pri
     { id: callerId, schoolId: schoolA, fullName: 'Anita Shah', email: 'anita.shah@riverside.example' },
     { id: otherId, schoolId: schoolB, fullName: 'Other School', email: 'other@example.com' }
   );
-  return { service: new TeacherService(repo), repo, caller: { teacherId: callerId, schoolId: schoolA } };
+  repo.roles.set(callerId, 'coordinator');
+  return { service: new TeacherService(repo), repo, caller: { teacherId: callerId, schoolId: schoolA, role: 'coordinator' } };
 }
 
 test('current teacher is the row named by the token', async () => {
@@ -109,5 +110,26 @@ test('list pages one school and rejects an unknown query', async () => {
   await assert.rejects(
     () => service.list(caller, { limit: '0' }),
     (error: unknown) => error instanceof ValidationFailed
+  );
+});
+
+test('a teacher cannot list or add colleagues', async () => {
+  const { service, repo, caller } = fixture();
+  repo.roles.set(callerId, 'teacher');
+  const colleague = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+  repo.rows.push({ id: colleague, schoolId: schoolA, fullName: 'Bea Cole', email: null });
+  await assert.rejects(
+    () => service.list(caller, {}),
+    (error: unknown) => error instanceof AccessDenied
+  );
+  await assert.rejects(
+    () => service.create(caller, { fullName: 'New Teacher' }),
+    (error: unknown) => error instanceof AccessDenied
+  );
+  const self = await service.get({ ...caller, role: 'teacher' }, callerId);
+  assert.equal(self.id, callerId);
+  await assert.rejects(
+    () => service.get(caller, colleague),
+    (error: unknown) => error instanceof AccessDenied
   );
 });

@@ -58,7 +58,7 @@ Public build settings live in `src/environments/environment.ts`. `ng build --pro
 | `e2e`              | Protractor end-to-end tests.                                                                           |
 | `scripts`          | The Node 22 wrapper that enables OpenSSL's legacy provider for the Angular 9 build.                    |
 | `db`               | PostgreSQL migrations for the shared mark book. Compose applies them only with the `markbook` profile. |
-| `backend`          | HTTP API. This module is teacher accounts and bearer-token checks.                                     |
+| `backend`          | HTTP API. Sign-in, refresh tokens, and coordinator or teacher access.                                  |
 
 Excel import, totals, print, and the workbook download still happen in the browser. `backend/` is the HTTP API for the shared mark book. This slice is the teacher account and bearer-token module: `GET /v1/health`, `GET /v1/me`, and the teacher collection. Students, sittings, and the other paths in the API spec are not implemented yet.
 
@@ -74,10 +74,14 @@ npm run dev
 
 Copy the repo `.env.example` to `.env` and set `JWT_SECRET` to at least 32 characters. `DATABASE_URL` points at the mark-book database. The API listens on port 8080.
 
-The OpenAPI spec authenticates every path except `GET /v1/health` with `Authorization: Bearer <jwt>`. The token is HS256. Its claims are `sub` (teacher id) and `school_id`. A teacher can read and add teachers only in that school. Passwords are not part of this module: the schema stores a name and an email, and the spec does not define a sign-in path. For a local call, mint a token for a teacher row that already exists:
+The API listens on port 8080. `GET /v1/health` is public. Every other path needs `Authorization: Bearer <jwt>` except the sign-in routes under `/v1/auth`.
+
+Access tokens are HS256 and last 15 minutes. The claims are `sub` (teacher id), `school_id`, and `role` (`coordinator` or `teacher`). Refresh tokens are random, stored only as a SHA-256 hash, and rotated on use. Reusing an old refresh token revokes that login. Passwords are hashed with scrypt and a unique salt. Five failed logins lock the account for 15 minutes, and repeated attempts from one address are rejected. Signup sends an email confirmation. Password reset and a coordinator's new teacher both send a one-time link. The local mailer records that a message was queued and does not log the token.
+
+A coordinator can list and add teachers. A teacher can read their own profile. Students, sittings, and the rest of the mark-book API are not implemented yet. For a local token without the sign-in flow:
 
 ```bash
-npm run token -- 22222222-2222-4222-8222-222222222222 11111111-1111-4111-8111-111111111111
+npm run token -- 22222222-2222-4222-8222-222222222222 11111111-1111-4111-8111-111111111111 teacher
 ```
 
 `npm test` covers the token, the teacher service, and the HTTP routes without Postgres. Set `DATABASE_URL` to also run the repository test against the mark-book schema.
