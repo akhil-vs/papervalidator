@@ -24,7 +24,8 @@ export async function withTransaction<T>(fn: (query: Query) => Promise<T>): Prom
     const client = await pool.connect();
     try {
       await client.query("begin");
-      const query: Query = async (text, params = []) => (await client.query(text, params)).rows as Row[];
+      const query = (async (text: string, params: unknown[] = []) =>
+        (await client.query(text, params)).rows) as Query;
       const result = await fn(query);
       await client.query("commit");
       return result;
