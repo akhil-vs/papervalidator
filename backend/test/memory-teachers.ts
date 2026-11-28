@@ -1,14 +1,22 @@
 import { randomUUID } from 'node:crypto';
 import { EmailAlreadyUsed } from '../src/domain/errors.js';
+import type { Role } from '../src/domain/role.js';
 import type { ListTeachersQuery, Teacher, TeacherPage } from '../src/domain/teacher.js';
 import type { TeacherRepository } from '../src/application/ports.js';
 
 export class MemoryTeachers implements TeacherRepository {
   readonly rows: Teacher[] = [];
+  readonly roles = new Map<string, Role>();
   insertError: Error | null = null;
 
   async findInSchool(schoolId: string, teacherId: string): Promise<Teacher | null> {
     return this.rows.find((row) => row.schoolId === schoolId && row.id === teacherId) ?? null;
+  }
+
+  async roleInSchool(schoolId: string, teacherId: string): Promise<Role | null> {
+    const teacher = await this.findInSchool(schoolId, teacherId);
+    if (!teacher) return null;
+    return this.roles.get(teacherId) ?? 'teacher';
   }
 
   async list(query: ListTeachersQuery): Promise<TeacherPage> {

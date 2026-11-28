@@ -1,7 +1,9 @@
+import type { Role } from '../domain/role.js';
 import type { ListTeachersQuery, Principal, Teacher, TeacherPage } from '../domain/teacher.js';
 
 export interface TeacherRepository {
   findInSchool(schoolId: string, teacherId: string): Promise<Teacher | null>;
+  roleInSchool(schoolId: string, teacherId: string): Promise<Role | null>;
   list(query: ListTeachersQuery): Promise<TeacherPage>;
   insert(input: { schoolId: string; fullName: string; email: string | null }): Promise<Teacher>;
 }

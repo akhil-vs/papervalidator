@@ -1,12 +1,12 @@
+import { isEmailAddress } from '../domain/email.js';
 import { AccessDenied, NotFound, ValidationFailed } from '../domain/errors.js';
 import { isUuid } from '../domain/ids.js';
+import type { Role } from '../domain/role.js';
 import type { FieldError } from '../domain/errors.js';
 import type { ListTeachersQuery, Principal, Teacher, TeacherPage, TeacherSort, SortDirection } from '../domain/teacher.js';
 import type { TeacherRepository } from './ports.js';
 
 const QUERY_KEYS = new Set(['limit', 'offset', 'sort', 'q']);
-const EMAIL =
-  /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$/;
 
 export class TeacherService {
   constructor(private readonly teachers: TeacherRepository) {}
@@ -20,17 +20,21 @@ export class TeacherService {
     if (!isUuid(teacherId)) throw new NotFound();
     const teacher = await this.teachers.findInSchool(principal.schoolId, teacherId);
     if (!teacher) throw new NotFound();
+    const role = await this.teachers.roleInSchool(principal.schoolId, principal.teacherId);
+    if (role !== 'coordinator' && principal.teacherId !== teacherId) {
+      throw new AccessDenied('You do not have access to this action.');
+    }
     return teacher;
   }
 
   async list(principal: Principal, rawQuery: Record<string, string>): Promise<TeacherPage> {
-    await this.requireMember(principal);
+    await this.requireRole(principal, ['coordinator']);
     const query = parseListQuery(principal.schoolId, rawQuery);
     return this.teachers.list(query);
   }
 
   async create(principal: Principal, body: unknown): Promise<Teacher> {
-    await this.requireMember(principal);
+    await this.requireRole(principal, ['coordinator']);
     const input = parseCreate(body);
     return this.teachers.insert({
       schoolId: principal.schoolId,
@@ -42,6 +46,13 @@ export class TeacherService {
   private async requireMember(principal: Principal): Promise<Teacher> {
     const teacher = await this.teachers.findInSchool(principal.schoolId, principal.teacherId);
     if (!teacher) throw new AccessDenied();
+    return teacher;
+  }
+
+  private async requireRole(principal: Principal, allowed: Role[]): Promise<Teacher> {
+    const teacher = await this.requireMember(principal);
+    const role = await this.teachers.roleInSchool(principal.schoolId, principal.teacherId);
+    if (!role || !allowed.includes(role)) throw new AccessDenied('You do not have access to this action.');
     return teacher;
   }
 }
@@ -124,7 +135,7 @@ function parseCreate(body: unknown): { fullName: string; email: string | null } 
       errors.push({ pointer: '/email', detail: 'Email must be a string or null.' });
     } else {
       const trimmed = record.email.trim();
-      if (!isEmail(trimmed)) {
+      if (!isEmailAddress(trimmed)) {
         errors.push({ pointer: '/email', detail: 'Email is invalid.' });
       } else {
         email = trimmed;
@@ -134,8 +145,4 @@ function parseCreate(body: unknown): { fullName: string; email: string | null } 
 
   if (errors.length > 0) throw new ValidationFailed(errors);
   return { fullName, email };
-}
-
-function isEmail(value: string): boolean {
-  return value.length <= 254 && EMAIL.test(value);
 }

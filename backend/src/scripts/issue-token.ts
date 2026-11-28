@@ -7,10 +7,11 @@ loadEnvFile(fileURLToPath(new URL('../../../.env', import.meta.url)));
 
 const teacherId = process.argv[2] ?? '';
 const schoolId = process.argv[3] ?? '';
-if (!isUuid(teacherId) || !isUuid(schoolId)) {
-  console.error('Usage: npm run token -- <teacherId> <schoolId>');
+const role = process.argv[4] ?? 'teacher';
+if (!isUuid(teacherId) || !isUuid(schoolId) || (role !== 'coordinator' && role !== 'teacher')) {
+  console.error('Usage: npm run token -- <teacherId> <schoolId> [coordinator|teacher]');
   process.exit(1);
 }
 
 const tokens = new JwtTokenService(requiredEnv('JWT_SECRET'));
-process.stdout.write(`${tokens.issue({ teacherId, schoolId })}\n`);
+process.stdout.write(`${tokens.issue({ teacherId, schoolId, role }, 12 * 60 * 60)}\n`);

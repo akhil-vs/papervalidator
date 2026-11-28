@@ -1,3 +1,5 @@
+import type { Role } from './role.js';
+
 export type Teacher = {
   id: string;
   schoolId: string;
@@ -8,6 +10,7 @@ export type Teacher = {
 export type Principal = {
   teacherId: string;
   schoolId: string;
+  role: Role;
 };
 
 export type TeacherSort = 'fullName' | 'email';

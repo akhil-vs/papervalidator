@@ -1,14 +1,16 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { isRole } from '../../domain/role.js';
 import { isUuid } from '../../domain/ids.js';
 import type { Principal } from '../../domain/teacher.js';
 import type { TokenIssuer, TokenVerifier } from '../../application/ports.js';
 
 const SKEW_SECONDS = 5;
-const DEFAULT_TTL_SECONDS = 12 * 60 * 60;
+const DEFAULT_TTL_SECONDS = 15 * 60;
 
 type JwtClaims = {
   sub?: unknown;
   school_id?: unknown;
+  role?: unknown;
   exp?: unknown;
 };
 
@@ -26,6 +28,7 @@ export class JwtTokenService implements TokenVerifier, TokenIssuer {
       JSON.stringify({
         sub: principal.teacherId,
         school_id: principal.schoolId,
+        role: principal.role,
         iat: issuedAt,
         exp: issuedAt + ttlSeconds,
       })
@@ -61,10 +64,11 @@ export class JwtTokenService implements TokenVerifier, TokenIssuer {
     }
     if (typeof claims.sub !== 'string' || !isUuid(claims.sub)) return null;
     if (typeof claims.school_id !== 'string' || !isUuid(claims.school_id)) return null;
+    if (!isRole(claims.role)) return null;
     if (typeof claims.exp !== 'number' || !Number.isFinite(claims.exp)) return null;
     const now = Math.floor(this.now().getTime() / 1000);
     if (claims.exp + SKEW_SECONDS <= now) return null;
-    return { teacherId: claims.sub, schoolId: claims.school_id };
+    return { teacherId: claims.sub, schoolId: claims.school_id, role: claims.role };
   }
 }
 

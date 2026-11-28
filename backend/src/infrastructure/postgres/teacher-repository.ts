@@ -27,6 +27,16 @@ export function createTeacherRepository(pool: pg.Pool): TeacherRepository {
       return row ? mapTeacher(row) : null;
     },
 
+    async roleInSchool(schoolId, teacherId) {
+      const result = await pool.query<{ role: string }>(`SELECT role FROM teachers WHERE school_id = $1 AND id = $2`, [
+        schoolId,
+        teacherId,
+      ]);
+      const role = result.rows[0]?.role;
+      if (role === 'coordinator' || role === 'teacher') return role;
+      return null;
+    },
+
     async list(query) {
       const pattern = query.nameQuery === null ? null : likeContains(query.nameQuery);
       const filters = `school_id = $1 AND ($2::text IS NULL OR full_name ILIKE $2 ESCAPE '\\')`;

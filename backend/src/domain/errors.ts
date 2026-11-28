@@ -50,3 +50,20 @@ export class EmailAlreadyUsed extends Error {
     this.name = 'EmailAlreadyUsed';
   }
 }
+
+export class EmailUnverified extends Error {
+  constructor() {
+    super('Confirm your email before signing in.');
+    this.name = 'EmailUnverified';
+  }
+}
+
+export class TooManyRequests extends Error {
+  readonly retryAfterSeconds: number;
+
+  constructor(retryAfterSeconds = 900) {
+    super('Too many attempts. Try again later.');
+    this.name = 'TooManyRequests';
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
